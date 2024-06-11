@@ -1,10 +1,8 @@
 package cn.allbs.weightscale.service;
 
 import cn.allbs.weightscale.enums.ScaleCommand;
-import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import jakarta.annotation.Resource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 /**
