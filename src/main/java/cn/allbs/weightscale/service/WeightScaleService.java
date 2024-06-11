@@ -1,5 +1,6 @@
 package cn.allbs.weightscale.service;
 
+import cn.allbs.weightscale.enums.ScaleCommand;
 import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import jakarta.annotation.Resource;
@@ -18,17 +19,17 @@ public class WeightScaleService {
     @Resource
     private SerialPortUtil serialPortUtil;
 
-    /**
-     * 读取称重数据
-     *
-     * @param portName 端口名称
-     * @param scaleId  称重编号
-     * @return 称重数据
-     */
-    public ResponseEntity<WeightData> readWeightData(String portName, int scaleId) {
+    public String performOperation(String portName, int scaleId, int operationCode) {
+        ScaleCommand command;
+        try {
+            command = ScaleCommand.fromOperationCode(operationCode);
+        } catch (IllegalArgumentException e) {
+            return "Invalid operation code: " + operationCode;
+        }
+
         serialPortUtil.initialize(portName, scaleId);
-        WeightData data = serialPortUtil.readData(scaleId, portName);
+        String data = serialPortUtil.sendCommand(scaleId, command);
         serialPortUtil.close(scaleId);
-        return ResponseEntity.ok(data);
+        return data;
     }
 }

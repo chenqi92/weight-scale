@@ -27,12 +27,23 @@ public class SerialPortUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(SerialPortUtil.class);
 
-    private final Map<Integer, SerialPort> serialPorts = new HashMap<>();
-    private final Map<Integer, BufferedReader> inputs = new HashMap<>();
-    private final Map<Integer, OutputStream> outputs = new HashMap<>();
-    private final Map<Integer, StringBuilder> dataBuffers = new HashMap<>();
+    private Map<Integer, SerialPort> serialPorts = new HashMap<>();
+    private Map<Integer, BufferedReader> inputs = new HashMap<>();
+    private Map<Integer, OutputStream> outputs = new HashMap<>();
+    private Map<Integer, StringBuilder> dataBuffers = new HashMap<>();
 
+    /**
+     * 初始化串口
+     *
+     * @param portName 串口名称
+     * @param scaleId  地磅编号
+     */
     public void initialize(String portName, int scaleId) {
+        if (serialPorts.containsKey(scaleId)) {
+            logger.info("串口 {} 已经初始化 (Scale {})", portName, scaleId);
+            return;
+        }
+
         SerialPort serialPort = SerialPort.getCommPort(portName);
         serialPort.setComPortParameters(9600, 8, 1, SerialPort.NO_PARITY);
         serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 2000, 0);
@@ -84,6 +95,11 @@ public class SerialPortUtil {
         }
     }
 
+    /**
+     * 关闭串口
+     *
+     * @param scaleId 地磅编号
+     */
     public void close(int scaleId) {
         if (serialPorts.containsKey(scaleId)) {
             SerialPort serialPort = serialPorts.get(scaleId);
@@ -98,12 +114,18 @@ public class SerialPortUtil {
         }
     }
 
+    /**
+     * 发送指令
+     *
+     * @param data    指令数据
+     * @param scaleId 地磅编号
+     */
     private void processData(String data, int scaleId) {
-        // 根据文档描述的数据帧格式进行解析
-        // 假设数据以 STX 开始，以 ETX 结束
+        // 根据实际文档描述的数据帧格式进行解析
         if (data.startsWith("\u0002") && data.endsWith("\u0003")) {
             // 获取命令类型或数据标识符
             String commandType = data.substring(1, 3);
+
             if (commandType.equals("AB")) {
                 WeightData weightData = parseWeightData(data);
                 logger.info("解析的地磅数据 (Scale {}): {}", scaleId, weightData);
@@ -153,21 +175,30 @@ public class SerialPortUtil {
         return weightData;
     }
 
-    public void sendCommand(int scaleId, ScaleCommand command) {
+    /**
+     * 发送指令
+     *
+     * @param scaleId 地磅编号
+     * @param command 指令
+     * @return 指令发送结果
+     */
+    public String sendCommand(int scaleId, ScaleCommand command) {
         try {
             OutputStream output = outputs.get(scaleId);
             if (output != null) {
                 output.write(hexStringToByteArray(command.getCommand()));
                 output.flush();
                 logger.info("发送指令: {} 到地磅 {}", command.getDescription(), scaleId);
+                return "Command sent: " + command.getDescription();
             }
         } catch (Exception e) {
             logger.error("发送指令时出错: {}", e.getMessage());
         }
+        return "Failed to send command: " + command.getDescription();
     }
 
     /**
-     * 将十六进制字符串转换为字节数组
+     * 十六进制数的字符串转换为对应的字节数组
      *
      * @param s 十六进制字符串
      * @return 字节数组
@@ -180,29 +211,5 @@ public class SerialPortUtil {
                     + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
-    }
-
-    public WeightData readData(int scaleId, String portName) {
-        if (!serialPorts.containsKey(scaleId)) {
-            initialize(portName, scaleId);
-        }
-
-        WeightData weightData;
-        try {
-            sendCommand(scaleId, ScaleCommand.READ_GROSS_WEIGHT);
-            // 模拟等待一段时间以接收数据
-            Thread.sleep(2000);
-            weightData = parseWeightData(dataBuffers.get(scaleId).toString());
-        } catch (Exception e) {
-            logger.error("读取数据时出错: {}", e.getMessage());
-            weightData = new WeightData();
-            weightData.setWeight("error");
-            weightData.setUnit("error");
-            weightData.setStatus("error");
-        }
-        logger.info("从地磅 {} 读取的数据: {}", scaleId, weightData);
-
-        close(scaleId); // 读取完数据后关闭连接
-        return weightData;
     }
 }
