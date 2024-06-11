@@ -1,6 +1,7 @@
 package cn.allbs.weightscale.service;
 
 import cn.allbs.weightscale.enums.ScaleCommand;
+import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -17,16 +18,16 @@ public class WeightScaleService {
     @Resource
     private SerialPortUtil serialPortUtil;
 
-    public String performOperation(String portName, int scaleId, int operationCode) {
+    public WeightData performOperation(String portName, int scaleId, int operationCode) {
         ScaleCommand command;
         try {
             command = ScaleCommand.fromOperationCode(operationCode);
         } catch (IllegalArgumentException e) {
-            return "Invalid operation code: " + operationCode;
+            return null;
         }
 
         serialPortUtil.initialize(portName, scaleId);
-        String data = serialPortUtil.sendCommand(scaleId, command);
+        WeightData data = serialPortUtil.sendCommand(scaleId, command);
         serialPortUtil.close(scaleId);
         return data;
     }

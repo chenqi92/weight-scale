@@ -31,6 +31,7 @@ public class SerialPortUtil {
     private Map<Integer, BufferedReader> inputs = new HashMap<>();
     private Map<Integer, OutputStream> outputs = new HashMap<>();
     private Map<Integer, StringBuilder> dataBuffers = new HashMap<>();
+    private Map<Integer, WeightData> receivedData = new HashMap<>();
 
     /**
      * 初始化串口
@@ -126,12 +127,17 @@ public class SerialPortUtil {
             // 获取命令类型或数据标识符
             String commandType = data.substring(1, 3);
 
-            if (commandType.equals("AB")) {
-                WeightData weightData = parseWeightData(data);
-                logger.info("解析的地磅数据 (Scale {}): {}", scaleId, weightData);
+            switch (commandType) {
+                case "AB":
+                    WeightData weightData = parseWeightData(data);
+                    // 存储解析后的数据
+                    receivedData.put(scaleId, weightData);
+                    logger.info("解析的地磅数据 (Scale {}): {}", scaleId, weightData);
+                    break;
                 // 添加更多的命令类型处理
-            } else {
-                logger.error("未知的命令类型: {}", commandType);
+                default:
+                    logger.error("未知的命令类型: {}", commandType);
+                    break;
             }
         } else {
             logger.error("收到的数据格式不正确: {}", data);
@@ -182,19 +188,21 @@ public class SerialPortUtil {
      * @param command 指令
      * @return 指令发送结果
      */
-    public String sendCommand(int scaleId, ScaleCommand command) {
+    public WeightData sendCommand(int scaleId, ScaleCommand command) {
         try {
             OutputStream output = outputs.get(scaleId);
             if (output != null) {
                 output.write(hexStringToByteArray(command.getCommand()));
                 output.flush();
                 logger.info("发送指令: {} 到地磅 {}", command.getDescription(), scaleId);
-                return "Command sent: " + command.getDescription();
+                // 等待数据接收完成 TODO 根据实际对接后调整
+                Thread.sleep(200);
+                return receivedData.get(scaleId);
             }
         } catch (Exception e) {
             logger.error("发送指令时出错: {}", e.getMessage());
         }
-        return "Failed to send command: " + command.getDescription();
+        return null;
     }
 
     /**
