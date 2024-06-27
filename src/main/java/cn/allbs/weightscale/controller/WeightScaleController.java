@@ -1,11 +1,20 @@
 package cn.allbs.weightscale.controller;
 
+import cn.allbs.weightscale.config.R;
 import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.service.WeightScaleService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author ChenQi
  * @date 2024/6/11
  */
+@Tag(name = "读取串口数据")
 @RestController
 public class WeightScaleController {
 
@@ -27,8 +37,27 @@ public class WeightScaleController {
      * @param portName 端口名称
      * @return 称重数据
      */
-    @GetMapping("/scale/{operationCode}")
-    public ResponseEntity<WeightData> performOperation(@PathVariable int operationCode, @RequestParam String portName) {
-        return ResponseEntity.ok(weightScaleService.performOperation(portName, operationCode));
+    @Operation(summary = "查询串口当前数据")
+    @Parameters({
+            @Parameter(name = "operationCode", description = "执行的操作", required = true, schema = @Schema(implementation = Integer.class), in = ParameterIn.QUERY),
+            @Parameter(name = "portName", description = "串口全名", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
+    })
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "查询成功", content =
+                    {@Content(schema = @Schema(implementation = WeightData.class),
+                            examples = {@ExampleObject(value = "{\n" +
+                                    "  \"code\": 200,\n" +
+                                    "  \"success\": true,\n" +
+                                    "  \"msg\": \"操作成功\",\n" +
+                                    "  \"data\": {\n" +
+                                    "    \"wight\": \"\",\n" +
+                                    "    \"unit\": \"\",\n" +
+                                    "    \"status\": \n" +
+                                    "  }\n" +
+                                    "}")})})
+    })
+    @GetMapping("/scale")
+    public R<WeightData> performOperation(@RequestParam Integer operationCode, @RequestParam String portName) {
+        return weightScaleService.performOperation(portName, operationCode);
     }
 }

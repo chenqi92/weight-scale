@@ -1,5 +1,6 @@
 package cn.allbs.weightscale.service;
 
+import cn.allbs.weightscale.config.R;
 import cn.allbs.weightscale.config.SerialPortManager;
 import cn.allbs.weightscale.enums.ScaleCommand;
 import cn.allbs.weightscale.model.WeightData;
@@ -21,12 +22,12 @@ public class WeightScaleService {
     @Resource
     private SerialPortManager serialPortManager;
 
-    public WeightData performOperation(String portName, int operationCode) {
+    public R<WeightData> performOperation(String portName, int operationCode) {
         ScaleCommand command;
         try {
             command = ScaleCommand.fromOperationCode(operationCode);
         } catch (IllegalArgumentException e) {
-            return null;
+            return R.fail(e.getLocalizedMessage());
         }
         // 选择串口
         if (serialPortManager.selectPort(portName)) {
@@ -36,11 +37,12 @@ public class WeightScaleService {
                 byte[] dataToSend = SerialPortUtil.hexStringToByteArray(command.getCommand());
                 byte[] responseData = serialPortManager.writeAndRead(dataToSend);
                 log.info("Received: {}", new String(responseData));
-                SerialPortUtil.parseWeightData(new String(responseData));
+                WeightData data = SerialPortUtil.parseWeightData(new String(responseData));
                 // 关闭串口
                 serialPortManager.close();
+                return R.ok(data);
             }
         }
-        return null;
+        return R.fail("没有对应串口或者串口打开失败！");
     }
 }

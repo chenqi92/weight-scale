@@ -26,7 +26,7 @@ public class SerialPortManager {
 
     @PostConstruct
     public void init() {
-        log.info("\nUsing Library Version v" + SerialPort.getVersion());
+        log.info("\nUsing Library Version v{}", SerialPort.getVersion());
         SerialPort[] ports = SerialPort.getCommPorts();
         log.info("\nAvailable Ports:\n");
         for (int i = 0; i < ports.length; ++i) {
