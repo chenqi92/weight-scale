@@ -1,9 +1,11 @@
 package cn.allbs.weightscale.service;
 
+import cn.allbs.weightscale.config.SerialPortManager;
 import cn.allbs.weightscale.enums.ScaleCommand;
 import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,23 +14,33 @@ import org.springframework.stereotype.Service;
  * @author ChenQi
  * @date 2024/6/11
  */
+@Slf4j
 @Service
 public class WeightScaleService {
 
     @Resource
-    private SerialPortUtil serialPortUtil;
+    private SerialPortManager serialPortManager;
 
-    public WeightData performOperation(String portName, int scaleId, int operationCode) {
+    public WeightData performOperation(String portName, int operationCode) {
         ScaleCommand command;
         try {
             command = ScaleCommand.fromOperationCode(operationCode);
         } catch (IllegalArgumentException e) {
             return null;
         }
-
-        serialPortUtil.initialize(portName, scaleId);
-        WeightData data = serialPortUtil.sendCommand(scaleId, command);
-        serialPortUtil.close(scaleId);
-        return data;
+        // 选择串口
+        if (serialPortManager.selectPort(portName)) {
+            // 打开串口
+            if (serialPortManager.openPort()) {
+                // 发送和读取数据示例
+                byte[] dataToSend = SerialPortUtil.hexStringToByteArray(command.getCommand());
+                byte[] responseData = serialPortManager.writeAndRead(dataToSend);
+                log.info("Received: {}", new String(responseData));
+                SerialPortUtil.parseWeightData(new String(responseData));
+                // 关闭串口
+                serialPortManager.close();
+            }
+        }
+        return null;
     }
 }

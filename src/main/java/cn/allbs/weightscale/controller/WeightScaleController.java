@@ -24,12 +24,11 @@ public class WeightScaleController {
     /**
      * 读取称重数据或者执行指令
      *
-     * @param scaleId  称重编号
      * @param portName 端口名称
      * @return 称重数据
      */
-    @GetMapping("/scale/{scaleId}/{operationCode}")
-    public ResponseEntity<WeightData> performOperation(@PathVariable int scaleId, @PathVariable int operationCode, @RequestParam String portName) {
-        return ResponseEntity.ok(weightScaleService.performOperation(portName, scaleId, operationCode));
+    @GetMapping("/scale/{operationCode}")
+    public ResponseEntity<WeightData> performOperation(@PathVariable int operationCode, @RequestParam String portName) {
+        return ResponseEntity.ok(weightScaleService.performOperation(portName, operationCode));
     }
 }
