@@ -18,12 +18,12 @@ public class WeightScaleService {
     public WeightData performOperation(String address, String portName, String operationCode) {
         try {
             // 检查串口是否已经打开
-//            if (!serialPortManager.isPortOpen(portName)) {
-//                log.info("串口未开，正在打开串口{}", portName);
-//                serialPortManager.openPort(portName);
-//            } else {
-//                log.info("串口已经打开{}", portName);
-//            }
+            if (!serialPortManager.isPortOpen(portName)) {
+                log.info("串口未开，正在打开串口{}", portName);
+                serialPortManager.openPort(portName);
+            } else {
+                log.info("串口已经打开{}", portName);
+            }
 
             // 根据地址和操作码生成指令
             byte[] command = generateCommand(address, operationCode.charAt(0));
