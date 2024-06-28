@@ -1,7 +1,6 @@
 package cn.allbs.weightscale.controller;
 
 import cn.allbs.weightscale.config.R;
-import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.service.WeightScaleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -45,20 +44,17 @@ public class WeightScaleController {
     })
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "查询成功", content =
-                    {@Content(schema = @Schema(implementation = WeightData.class),
-                            examples = {@ExampleObject(value = "{\n" +
-                                    "  \"code\": 200,\n" +
-                                    "  \"success\": true,\n" +
-                                    "  \"msg\": \"操作成功\",\n" +
-                                    "  \"data\": {\n" +
-                                    "    \"wight\": \"\",\n" +
-                                    "    \"unit\": \"\",\n" +
-                                    "    \"status\": \n" +
-                                    "  }\n" +
-                                    "}")})})
+                    {@Content(schema = @Schema(implementation = String.class),
+                            examples = {@ExampleObject(value = """
+                                    {
+                                      "code": 200,
+                                      "success": true,
+                                      "msg": "操作成功",
+                                      "data": "1234"
+                                    }""")})})
     })
     @GetMapping("/scale/{address}")
-    public R<WeightData> performOperation(@PathVariable("address") String address, @RequestParam String operationCode, @RequestParam String portName) {
+    public R<String> performOperation(@PathVariable("address") String address, @RequestParam String operationCode, @RequestParam String portName) {
         return R.ok(weightScaleService.performOperation(address, portName, operationCode));
     }
 }

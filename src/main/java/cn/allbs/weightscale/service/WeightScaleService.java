@@ -2,7 +2,6 @@ package cn.allbs.weightscale.service;
 
 import cn.allbs.weightscale.config.SerialPortManager;
 import cn.allbs.weightscale.exception.BhudyException;
-import cn.allbs.weightscale.model.WeightData;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,7 @@ public class WeightScaleService {
     @Resource
     private SerialPortManager serialPortManager;
 
-    public WeightData performOperation(String address, String portName, String operationCode) {
+    public String performOperation(String address, String portName, String operationCode) {
         try {
             // 检查串口是否已经打开
             if (!serialPortManager.isPortOpen(portName)) {
@@ -32,7 +31,7 @@ public class WeightScaleService {
             log.info("Received response: {}", response);
 
             // 处理响应数据并返回结果
-            return parseResponse(response);
+            return SerialPortUtil.parseWeightData(response);
         } catch (Exception e) {
             throw new BhudyException("Error performing operation: " + e.getMessage(), e);
         }
@@ -56,19 +55,5 @@ public class WeightScaleService {
 
         // 生成字节数组
         return new byte[]{start, addressByte, commandByte, xorHigh, xorLow, end};
-    }
-
-    private WeightData parseResponse(byte[] response) {
-        // 解析响应数据并创建 WeightData 对象
-        // 这里是一个示例，实际解析逻辑需要根据具体需求编写
-        StringBuilder weightStringBuilder = new StringBuilder();
-        for (int i = 1; i < response.length - 3; i += 6) {
-            String hexPart = new String(new byte[]{response[i + 2], response[i + 3]});
-            weightStringBuilder.append((char) Integer.parseInt(hexPart, 16));
-        }
-
-        WeightData data = new WeightData();
-        data.setWeight(weightStringBuilder.toString());
-        return data;
     }
 }
