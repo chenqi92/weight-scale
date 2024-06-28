@@ -1,6 +1,7 @@
 package cn.allbs.weightscale.util;
 
 import cn.allbs.weightscale.enums.ScaleCommand;
+import cn.allbs.weightscale.exception.BhudyException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +67,9 @@ public class SerialPortUtil {
      * @return 重量
      */
     public static String parseWeightData(byte[] data) {
+        if (data.length < 20) {
+            throw new BhudyException("串口未接收到数据或者数据长度不够，返回数据内容为" + Arrays.toString(data));
+        }
         if (data[0] != 0x02 || data[data.length - 1] != 0x03) {
             throw new IllegalArgumentException("Invalid data format");
         }
