@@ -84,12 +84,23 @@ public class SerialPortUtil {
      * @param s 十六进制字符串
      * @return 字节数组
      */
-    public byte[] hexStringToByteArray(String s) {
+    public static byte[] hexStringToByteArray(String s) {
+        s = s.replaceAll("\\s", ""); // 去除所有空格
         int len = s.length();
+
+        // 确保字符串长度为偶数
+        if (len % 2 != 0) {
+            throw new IllegalArgumentException("Invalid hex string: " + s);
+        }
+
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
+            int high = Character.digit(s.charAt(i), 16);
+            int low = Character.digit(s.charAt(i + 1), 16);
+            if (high == -1 || low == -1) {
+                throw new IllegalArgumentException("Invalid hex character in string: " + s);
+            }
+            data[i / 2] = (byte) ((high << 4) + low);
         }
         return data;
     }

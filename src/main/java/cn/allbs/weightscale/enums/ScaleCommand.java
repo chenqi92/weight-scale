@@ -11,6 +11,8 @@ import lombok.Getter;
 @Getter
 public enum ScaleCommand {
 
+    // 握手
+    HANDSHAKE("02 41 41 30 30 03", 0, "握手"),
     // 读取毛重
     READ_GROSS_WEIGHT("02 41 42 30 33 03", 1, "读取毛重"),
     // 读取皮重
