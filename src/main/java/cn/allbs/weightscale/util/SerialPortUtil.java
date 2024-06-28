@@ -104,4 +104,20 @@ public class SerialPortUtil {
         }
         return data;
     }
+
+
+    /**
+     * 字节数组转换为十六进制字符串
+     *
+     * @param byteArray 字节数组
+     * @return 十六进制字符串
+     */
+    public static String byteArrayToHexString(byte[] byteArray) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : byteArray) {
+            hexString.append(String.format("%02X ", b));
+        }
+        // 去掉最后一个空格
+        return hexString.toString().trim();
+    }
 }

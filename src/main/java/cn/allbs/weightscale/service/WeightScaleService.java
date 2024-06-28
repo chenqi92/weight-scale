@@ -3,6 +3,7 @@ package cn.allbs.weightscale.service;
 import cn.allbs.weightscale.config.SerialPortManager;
 import cn.allbs.weightscale.exception.BhudyException;
 import cn.allbs.weightscale.model.WeightData;
+import cn.allbs.weightscale.util.SerialPortUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,18 +18,18 @@ public class WeightScaleService {
     public WeightData performOperation(String address, String portName, String operationCode) {
         try {
             // 检查串口是否已经打开
-            if (!serialPortManager.isPortOpen(portName)) {
-                log.info("串口未开，正在打开串口{}", portName);
-                serialPortManager.openPort(portName);
-            } else {
-                log.info("串口已经打开{}", portName);
-            }
+//            if (!serialPortManager.isPortOpen(portName)) {
+//                log.info("串口未开，正在打开串口{}", portName);
+//                serialPortManager.openPort(portName);
+//            } else {
+//                log.info("串口已经打开{}", portName);
+//            }
 
             // 根据地址和操作码生成指令
             byte[] command = generateCommand(address, operationCode.charAt(0));
-            log.info("Sending command: {}", new String(command));
+            log.info("Sending command: {}", SerialPortUtil.byteArrayToHexString(command));
             byte[] response = serialPortManager.writeAndRead(portName, command);
-            log.info("Received response: {}", new String(response));
+            log.info("Received response: {}", response);
 
             // 处理响应数据并返回结果
             return parseResponse(response);
@@ -45,7 +46,7 @@ public class WeightScaleService {
         byte commandByte = (byte) command;
 
         // 计算异或校验
-        byte xor = (byte) (start ^ addressByte ^ commandByte);
+        byte xor = (byte) (addressByte ^ commandByte);
         byte xorHigh = (byte) ((xor >> 4) & 0x0F);
         byte xorLow = (byte) (xor & 0x0F);
 

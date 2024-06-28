@@ -25,7 +25,7 @@ public class SerialPortManager {
         serialPorts = new HashMap<>();
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         log.info("\nUsing Library Version v{}", SerialPort.getVersion());
         SerialPort[] ports = SerialPort.getCommPorts();
