@@ -47,4 +47,9 @@ public interface CommonConstants {
      * spring.application.name
      */
     String SPRING_APPLICATION_NAME = SPRING_APPLICATION + "name";
+
+    /**
+     * 时间格式
+     */
+    String DATETIME_PATTERN = "yyyy年MM月dd日HH时mm分ss秒";
 }

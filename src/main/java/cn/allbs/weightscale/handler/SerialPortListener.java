@@ -1,12 +1,14 @@
 package cn.allbs.weightscale.handler;
 
 import cn.allbs.weightscale.config.SerialPortConfig;
+import cn.allbs.weightscale.constants.CommonConstants;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import com.fazecast.jSerialComm.SerialPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +41,7 @@ public class SerialPortListener implements Runnable {
                 int numRead = serialPort.readBytes(readBuffer, readBuffer.length);
                 if (numRead > 0) {
                     String result = SerialPortUtil.parseWeightData(readBuffer);
-                    log.info("{}读取到串口{}的数据为:{}", LocalDateTime.now(), portName, result);
+                    log.info("{}读取到串口{}的数据为:{}", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.DATETIME_PATTERN)), portName, result);
                     // 存入Redis
                     redisTemplate.opsForValue().set(serialPortConfig.getPortMappings().get(portName), result);
                 }
