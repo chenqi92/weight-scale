@@ -57,4 +57,31 @@ public class WeightScaleController {
     public R<String> performOperation(@PathVariable("address") String address, @RequestParam String operationCode, @RequestParam String portName) {
         return R.ok(weightScaleService.performOperation(address, portName, operationCode));
     }
+
+    /**
+     * 读取称重数据或者执行指令
+     *
+     * @param portName 端口名称
+     * @return 称重数据
+     */
+    @Operation(summary = "查询串口当前数据")
+    @Parameters({
+            @Parameter(name = "operationCode", description = "执行的操作A握手,B读毛重,C读皮重,D读净重", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
+            @Parameter(name = "portName", description = "串口全名", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
+    })
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "查询成功", content =
+                    {@Content(schema = @Schema(implementation = String.class),
+                            examples = {@ExampleObject(value = """
+                                    {
+                                      "code": 200,
+                                      "success": true,
+                                      "msg": "操作成功",
+                                      "data": "1234"
+                                    }""")})})
+    })
+    @GetMapping("/currentWight")
+    public R<String> performOperation(@RequestParam String portName) {
+        return R.ok(weightScaleService.getCurrentWeight(portName));
+    }
 }

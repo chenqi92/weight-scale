@@ -1,6 +1,5 @@
 package cn.allbs.weightscale.util;
 
-import cn.allbs.weightscale.enums.ScaleCommand;
 import cn.allbs.weightscale.exception.BhudyException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -67,16 +66,14 @@ public class SerialPortUtil {
      * @return 重量
      */
     public static String parseWeightData(byte[] data) {
-        if (data.length < 20) {
+        if (data.length < 12) {
             throw new BhudyException("串口未接收到数据或者数据长度不够，返回数据内容为" + Arrays.toString(data));
         }
         if (data[0] != 0x02 || data[data.length - 1] != 0x03) {
             throw new IllegalArgumentException("Invalid data format");
         }
 
-        char address = (char) data[1];
-        char command = (char) data[2];
-        byte[] payload = Arrays.copyOfRange(data, 3, data.length - 3);
+        byte[] payload = Arrays.copyOfRange(data, 1, data.length - 3);
         byte xorHigh = data[data.length - 3];
         byte xorLow = data[data.length - 2];
         byte end = data[data.length - 1];
@@ -98,8 +95,6 @@ public class SerialPortUtil {
             log.info("校验失败，报文中高四位{},低四位{};主动校验后的高四位:{},低四位{};", xorHigh, xorLow, expectedXorHigh, expectedXorLow);
         }
 
-        log.info("当前地址为:{}", address);
-        log.info("当前执行命名:{}", ScaleCommand.getDescriptionByOperationCode(String.valueOf(command)));
         return parseWeight(payload);
     }
 
@@ -110,13 +105,13 @@ public class SerialPortUtil {
      * @return 重量
      */
     private static String parseWeight(byte[] payload) {
-        if (payload.length != 14) {
+        if (payload.length != 8) {
             throw new IllegalArgumentException("Invalid payload length for weight data");
         }
 
         char sign = (char) payload[0];
         String weightValue = new String(Arrays.copyOfRange(payload, 1, 7)).trim();
-        int decimalPointPosition = payload[13] - '0';
+        int decimalPointPosition = payload[7] - '0';
 
         // 插入小数点
         StringBuilder weight = new StringBuilder(weightValue);
@@ -150,39 +145,41 @@ public class SerialPortUtil {
         return xor;
     }
 
+    /**
+     * 生成指令
+     *
+     * @param address 地址
+     * @param command 指令
+     * @return 指令字节数组
+     */
+    public byte[] generateCommand(String address, char command) {
+        byte start = 0x02; // 开始符
+        byte end = 0x03; // 结束符
+
+        byte addressByte = (byte) address.charAt(0);
+        byte commandByte = (byte) command;
+
+        // 计算异或校验
+        byte xor = (byte) (addressByte ^ commandByte);
+        byte xorHigh = (byte) ((xor >> 4) & 0x0F);
+        byte xorLow = (byte) (xor & 0x0F);
+
+        // 高四位和低四位的ASCII码转换
+        xorHigh += (byte) ((xorHigh <= 9) ? 0x30 : 0x37);
+        xorLow += (byte) ((xorLow <= 9) ? 0x30 : 0x37);
+
+        // 生成字节数组
+        return new byte[]{start, addressByte, commandByte, xorHigh, xorLow, end};
+    }
+
     public static void main(String[] args) {
-        byte[] data = new byte[20];
-        data[0] = 0x02; // Start byte
-        data[1] = 'A';  // Address
-        data[2] = 'B';  // Command
-
-        // Payload (14 bytes)
-        data[3] = '+';
-        data[4] = '0';
-        data[5] = '0';
-        data[6] = '1';
-        data[7] = '2';
-        data[8] = '3';
-        data[9] = '4';
-        data[10] = ' ';
-        data[11] = ' ';
-        data[12] = ' ';
-        data[13] = ' ';
-        data[14] = ' ';
-        data[15] = ' ';
-        data[16] = '0'; // 小数点位数
-
-        // Calculate XOR checksum from index 1 to 16
-        byte xor = calculateXorChecksum(Arrays.copyOfRange(data, 1, 17));
-        data[17] = (byte) ((xor >> 4) & 0x0F);
-        data[18] = (byte) (xor & 0x0F);
-
-        // Convert XOR values to ASCII
-        data[17] += (byte) ((data[17] <= 9) ? 0x30 : 0x37);
-        data[18] += (byte) ((data[18] <= 9) ? 0x30 : 0x37);
-
-        // End byte
-        data[19] = 0x03;
+        byte[] data = {
+                0x02, // Start byte
+                0x2B, // '+'
+                0x30, 0x30, 0x31, 0x35, 0x30, 0x30, 0x30, 0x31, // '00150001'
+                0x46, // XOR checksum
+                0x03  // End byte
+        };
 
         String result = parseWeightData(data);
         System.out.println(result);
