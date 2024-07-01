@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 类 SerialPortManager
@@ -25,16 +26,18 @@ import java.util.Map;
 public class SerialPortManager {
 
     private final Map<String, SerialPort> serialPorts;
-
-    public SerialPortManager() {
-        serialPorts = new HashMap<>();
-    }
+    private final Map<String, SerialPortListener> listeners;
 
     @Resource
     private RedisTemplate redisTemplate;
 
     @Resource
     private SerialPortConfig serialPortConfig;
+
+    public SerialPortManager() {
+        serialPorts = new HashMap<>();
+        listeners = new HashMap<>();
+    }
 
     @PostConstruct
     public void init() {
@@ -81,26 +84,44 @@ public class SerialPortManager {
             port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
             port.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
             port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 1000, 1000);
+            // 获取 Redis 键名
+            String redisKey = Optional.ofNullable(serialPortConfig.getPortMappings()).map(a -> a.get(portName)).orElse("pc:weight:unknown");
+
             // 直接开始解析
-            SerialPortListener listener = new SerialPortListener(port, portName, redisTemplate, serialPortConfig);
+            SerialPortListener listener = new SerialPortListener(port, portName, redisTemplate, redisKey);
+            listeners.put(portName, listener);
             Thread listenerThread = new Thread(listener);
             listenerThread.start();
         }
     }
 
+    /**
+     * 判断指定com口是否打开
+     */
     public boolean isPortOpen(String portName) {
         SerialPort port = serialPorts.get(portName);
         return port != null && port.isOpen();
     }
 
+    /**
+     * 关闭指定com口
+     */
     public void closePort(String portName) {
         SerialPort port = serialPorts.get(portName);
+        SerialPortListener listener = listeners.get(portName);
         if (port != null && port.isOpen()) {
+            if (listener != null) {
+                listener.stop();
+                listeners.remove(portName);
+            }
             port.closePort();
             log.info("Closed Port: {}", portName);
         }
     }
 
+    /**
+     * 向指定com口发送数据
+     */
     public int write(String portName, byte[] data) {
         SerialPort port = serialPorts.get(portName);
         if (port == null || !port.isOpen()) {
@@ -109,6 +130,9 @@ public class SerialPortManager {
         return port.writeBytes(data, data.length);
     }
 
+    /**
+     * 从指定com口读取数据
+     */
     public int read(String portName, byte[] data) {
         SerialPort port = serialPorts.get(portName);
         if (port == null || !port.isOpen()) {
@@ -163,6 +187,9 @@ public class SerialPortManager {
         return null;
     }
 
+    /**
+     * 关闭所有com口
+     */
     public void closeAllPorts() {
         for (String portName : serialPorts.keySet()) {
             closePort(portName);

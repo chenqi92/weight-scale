@@ -1,6 +1,5 @@
 package cn.allbs.weightscale.handler;
 
-import cn.allbs.weightscale.config.SerialPortConfig;
 import cn.allbs.weightscale.constants.CommonConstants;
 import cn.allbs.weightscale.util.SerialPortUtil;
 import com.fazecast.jSerialComm.SerialPort;
@@ -20,13 +19,13 @@ public class SerialPortListener implements Runnable {
     private final String portName;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final SerialPortConfig serialPortConfig;
+    private final String redisKey;
 
-    public SerialPortListener(SerialPort serialPort, String portName, RedisTemplate<String, Object> redisTemplate, SerialPortConfig serialPortConfig) {
+    public SerialPortListener(SerialPort serialPort, String portName, RedisTemplate<String, Object> redisTemplate, String redisKey) {
         this.serialPort = serialPort;
         this.portName = portName;
         this.redisTemplate = redisTemplate;
-        this.serialPortConfig = serialPortConfig;
+        this.redisKey = redisKey;
     }
 
     @Override
@@ -43,7 +42,7 @@ public class SerialPortListener implements Runnable {
                     String result = SerialPortUtil.parseWeightData(readBuffer);
                     log.info("{}读取到串口{}的数据为:{}", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.DATETIME_PATTERN)), portName, result);
                     // 存入Redis
-                    redisTemplate.opsForValue().set(serialPortConfig.getPortMappings().get(portName), result);
+                    redisTemplate.opsForValue().set(redisKey, result);
                 }
             }
         } catch (Exception e) {
