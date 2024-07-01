@@ -66,7 +66,6 @@ public class WeightScaleController {
      */
     @Operation(summary = "查询串口当前数据")
     @Parameters({
-            @Parameter(name = "operationCode", description = "执行的操作A握手,B读毛重,C读皮重,D读净重", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
             @Parameter(name = "portName", description = "串口全名", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
     })
     @ApiResponses({
