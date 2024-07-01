@@ -154,6 +154,9 @@
                 <configuration>
                     <target>${maven.compiler.target}</target>
                     <source>${maven.compiler.source}</source>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <encoding>UTF-8</encoding>
                     <skip>true</skip>
                 </configuration>

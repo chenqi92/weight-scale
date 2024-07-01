@@ -79,8 +79,8 @@ public class WeightScaleController {
                                       "data": "1234"
                                     }""")})})
     })
-    @GetMapping("/currentWight")
-    public R<String> performOperation(@RequestParam String portName) {
+    @GetMapping("/currentWeight")
+    public R<String> performOperation(@RequestParam(name = "portName") String portName) {
         return R.ok(weightScaleService.getCurrentWeight(portName));
     }
 }
