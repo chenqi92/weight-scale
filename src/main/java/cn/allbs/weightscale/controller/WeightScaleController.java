@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,6 +38,7 @@ public class WeightScaleController {
      */
     @Operation(summary = "查询串口当前数据")
     @Parameters({
+            @Parameter(name = "address", description = "地址为A~Z", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
             @Parameter(name = "operationCode", description = "执行的操作A握手,B读毛重,C读皮重,D读净重", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
             @Parameter(name = "portName", description = "串口全名", required = true, schema = @Schema(implementation = String.class), in = ParameterIn.QUERY),
     })
@@ -53,8 +53,8 @@ public class WeightScaleController {
                                       "data": "1234"
                                     }""")})})
     })
-    @GetMapping("/scale/{address}")
-    public R<String> performOperation(@PathVariable("address") String address, @RequestParam String operationCode, @RequestParam String portName) {
+    @GetMapping("/scale")
+    public R<String> performOperation(@RequestParam("address") String address, @RequestParam("operationCode") String operationCode, @RequestParam("portName") String portName) {
         return R.ok(weightScaleService.performOperation(address, portName, operationCode));
     }
 
