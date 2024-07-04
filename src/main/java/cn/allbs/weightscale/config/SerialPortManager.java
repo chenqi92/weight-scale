@@ -14,7 +14,6 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 类 SerialPortManager
@@ -29,7 +28,7 @@ public class SerialPortManager {
     private final Map<String, SerialPortListener> listeners;
 
     @Resource
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Resource
     private SerialPortConfig serialPortConfig;
@@ -39,6 +38,9 @@ public class SerialPortManager {
         listeners = new HashMap<>();
     }
 
+    /**
+     * 初始化
+     */
     @PostConstruct
     public void init() {
         log.info("\nUsing Library Version v{}", SerialPort.getVersion());
@@ -48,10 +50,16 @@ public class SerialPortManager {
         for (SerialPort port : ports) {
             log.info("{}: {} - {}", port.getSystemPortName(), port.getDescriptivePortName(), port.getPortDescription());
             serialPorts.put(port.getSystemPortName(), port);
-            openPort(port.getSystemPortName());
+            startListener(port.getSystemPortName(), portMappings.get(port.getSystemPortName()));
         }
     }
 
+    /**
+     * 添加串口
+     *
+     * @param portName 串口名称
+     * @return 结果
+     */
     public boolean addPort(String portName) {
         SerialPort[] ports = SerialPort.getCommPorts();
         for (SerialPort port : ports) {
@@ -66,45 +74,58 @@ public class SerialPortManager {
     }
 
     /**
-     * 打开指定com口
+     * 开始监听
+     *
+     * @param portName 串口名称
+     * @return 结果
+     */
+    private void startListener(String portName, String redisKey) {
+        if (!listeners.containsKey(portName)) {
+            SerialPort port = serialPorts.get(portName);
+            if (port != null) {
+                SerialPortListener listener = new SerialPortListener(port, portName, redisTemplate, redisKey);
+                listeners.put(portName, listener);
+                Thread listenerThread = new Thread(listener);
+                listenerThread.start();
+            }
+        }
+    }
+
+    /**
+     * 打开串口
+     *
+     * @param portName 串口名称
      */
     public void openPort(String portName) {
         SerialPort port = serialPorts.get(portName);
-        if (port == null) {
-            log.info("Port {} is not managed!", portName);
-            return;
-        }
-        if (!port.isOpen()) {
+        if (port != null && !port.isOpen()) {
             log.info("\nPre-setting RTS: {}", port.setRTS() ? "Success" : "Failure");
             if (!port.openPort()) {
                 log.info("Open serial port {} error!", portName);
-                return;
+            } else {
+                log.info("\nOpening {}: {} - {}", port.getSystemPortName(), port.getDescriptivePortName(), port.getPortDescription());
+                port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
+                port.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+                port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 1000, 1000);
             }
-            log.info("\nOpening {}: {} - {}", port.getSystemPortName(), port.getDescriptivePortName(), port.getPortDescription());
-            port.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
-            port.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-            port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 1000, 1000);
-            // 获取 Redis 键名
-            String redisKey = Optional.ofNullable(serialPortConfig.getPortMappings()).map(a -> a.get(portName)).orElse("pc:weight:unknown");
-
-            // 直接开始解析
-            SerialPortListener listener = new SerialPortListener(port, portName, redisTemplate, redisKey);
-            listeners.put(portName, listener);
-            Thread listenerThread = new Thread(listener);
-            listenerThread.start();
         }
     }
 
     /**
-     * 判断指定com口是否打开
+     * 是否打开串口
+     *
+     * @param portName 串口名称
+     * @return 结果
      */
     public boolean isPortOpen(String portName) {
         SerialPort port = serialPorts.get(portName);
-        return port != null && port.isOpen();
+        return port == null || !port.isOpen();
     }
 
     /**
-     * 关闭指定com口
+     * 关闭串口
+     *
+     * @param portName 串口名称
      */
     public void closePort(String portName) {
         SerialPort port = serialPorts.get(portName);
@@ -120,7 +141,11 @@ public class SerialPortManager {
     }
 
     /**
-     * 向指定com口发送数据
+     * 写入数据
+     *
+     * @param portName 串口名称
+     * @param data     数据
+     * @return 结果
      */
     public int write(String portName, byte[] data) {
         SerialPort port = serialPorts.get(portName);
@@ -131,7 +156,11 @@ public class SerialPortManager {
     }
 
     /**
-     * 从指定com口读取数据
+     * 读取数据
+     *
+     * @param portName 串口名称
+     * @param data     数据
+     * @return 结果
      */
     public int read(String portName, byte[] data) {
         SerialPort port = serialPorts.get(portName);
@@ -142,7 +171,11 @@ public class SerialPortManager {
     }
 
     /**
-     * 向指定com口发送数据并且读取数据
+     * 写入并读取数据
+     *
+     * @param portName 串口名称
+     * @param bytes    数据
+     * @return 结果
      */
     public byte[] writeAndRead(String portName, byte[] bytes) {
         byte[] resultData = null;
@@ -168,9 +201,13 @@ public class SerialPortManager {
     }
 
     /**
-     * 向指定com口发送数据并且读取数据
+     * 读取一次重量
+     *
+     * @param portName 串口名称
+     * @return 结果
      */
     public String readWeightOnce(String portName) {
+        log.info("读取一次重量");
         try {
             // 固定读取12位
             byte[] readBuffer = new byte[12];
@@ -182,13 +219,13 @@ public class SerialPortManager {
                 return result;
             }
         } catch (Exception e) {
-            throw new BhudyException(e.getMessage());
+            log.error("读取一次重量异常!异常原因{}", e.getMessage());
         }
         return null;
     }
 
     /**
-     * 关闭所有com口
+     * 关闭所有串口
      */
     public void closeAllPorts() {
         for (String portName : serialPorts.keySet()) {

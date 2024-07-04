@@ -25,7 +25,7 @@ public class WeightScaleService {
     public String performOperation(String address, String portName, String operationCode) {
         try {
             // 检查串口是否已经打开
-            if (!serialPortManager.isPortOpen(portName)) {
+            if (serialPortManager.isPortOpen(portName)) {
                 log.info("串口未开，正在打开串口{}", portName);
                 serialPortManager.openPort(portName);
             } else {
@@ -48,7 +48,7 @@ public class WeightScaleService {
     public String getCurrentWeight(String portName) {
         try {
             // 检查串口是否已经打开
-            if (!serialPortManager.isPortOpen(portName)) {
+            if (serialPortManager.isPortOpen(portName)) {
                 log.info("串口未开，正在打开串口{}", portName);
                 serialPortManager.openPort(portName);
             } else {

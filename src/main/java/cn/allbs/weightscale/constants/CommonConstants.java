@@ -51,5 +51,5 @@ public interface CommonConstants {
     /**
      * 时间格式
      */
-    String DATETIME_PATTERN = "yyyy年MM月dd日HH时mm分ss秒";
+    String DATETIME_PATTERN = "yyyy年MM月dd日HH时mm分ss秒SSS毫秒";
 }

@@ -20,6 +20,7 @@ public class SerialPortListener implements Runnable {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final String redisKey;
+    private volatile boolean running = true;
 
     public SerialPortListener(SerialPort serialPort, String portName, RedisTemplate<String, Object> redisTemplate, String redisKey) {
         this.serialPort = serialPort;
@@ -30,7 +31,15 @@ public class SerialPortListener implements Runnable {
 
     @Override
     public void run() {
-        scheduler.scheduleAtFixedRate(this::readFromPort, 0, 100, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(this::processPort, 0, 200, TimeUnit.MILLISECONDS);
+    }
+
+    private void processPort() {
+        if (serialPort.isOpen()) {
+            readFromPort();
+        } else {
+            tryReconnect();
+        }
     }
 
     private void readFromPort() {
@@ -47,11 +56,27 @@ public class SerialPortListener implements Runnable {
             }
         } catch (Exception e) {
             log.error("Error reading from serial port", e);
+            serialPort.closePort();
+        }
+    }
+
+    private void tryReconnect() {
+        try {
+            Thread.sleep(1000); // 等待1秒钟再尝试重新连接
+            if (serialPort.openPort()) {
+                log.info("Reconnected to serial port {}", portName);
+            } else {
+                log.error("Failed to reconnect to serial port {}", portName);
+            }
+        } catch (InterruptedException e) {
+            log.error("Reconnection attempt interrupted", e);
         }
     }
 
     // 停止监听器的方法
     public void stop() {
+        running = false;
         scheduler.shutdown();
+        serialPort.closePort();
     }
 }
