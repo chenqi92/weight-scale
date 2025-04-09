@@ -2,7 +2,7 @@
 地磅称重解析
 同时支持的`连续发送方式`和`指令应答方式`
 项目启动后可以通过`localhost:7878/doc.html`查看可以请求的两个接口，返回的数据都为直接的称重数据，当前项目地磅设置单位为Kg
-![](https://nas.allbs.cn:9006/cloudpic/2024/07/bf1df4fb8a788f03220bfeb45ed39544.png)
+![](https://img.fffuk.com/2024/07/bf1df4fb8a788f03220bfeb45ed39544.png)
 
 
 # 获取数据的方式
@@ -23,4 +23,4 @@
 - `portName`串口，比如当前项目的两个串口`COM3`,`COM4`,其他项目可能是`COM1`,`COM2`之类的。
 
 ## 实际效果
-![](https://nas.allbs.cn:9006/cloudpic/2024/07/4330f270f20a8427864073a6886a82a2.png)
+![](https://img.fffuk.com/2024/07/4330f270f20a8427864073a6886a82a2.png)
